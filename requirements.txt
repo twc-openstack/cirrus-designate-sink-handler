@@ -1,0 +1,6 @@
+git+https://github.com/openstack/designate.git@stable/juno#egg=designate
+python-designateclient
+python-novaclient
+python-neutronclient
+python-keystoneclient
+ipython

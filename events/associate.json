@@ -1,0 +1,39 @@
+# This is an example of what the AMQP message looks like when a floating ip is
+# associated with an instance.  To correlate this with an instance, it's
+# necessary to get the device id associated with the port.
+{
+  "_context_auth_token": "<SANITIZED>",
+  "_context_is_admin": true,
+  "_context_project_id": "0260064f983044e6b847ceb5d37bf444",
+  "_context_project_name": "admin",
+  "_context_read_deleted": "no",
+  "_context_request_id": "req-f608665f-fa08-47e1-be31-fcf9649aa29c",
+  "_context_roles": [
+    "admin"
+  ],
+  "_context_tenant": "0260064f983044e6b847ceb5d37bf444",
+  "_context_tenant_id": "0260064f983044e6b847ceb5d37bf444",
+  "_context_tenant_name": "admin",
+  "_context_timestamp": "2015-04-27 01:39:02.447565",
+  "_context_user": "8571ef0fdb924cbd9d22e3a43cd44d3a",
+  "_context_user_id": "8571ef0fdb924cbd9d22e3a43cd44d3a",
+  "_context_user_name": "admin",
+  "_unique_id": "89b9e209af5f483789c5ae5927c9defa",
+  "event_type": "floatingip.update.end",
+  "message_id": "fe3eff2a-c167-4796-bc10-c0df1678bb05",
+  "payload": {
+    "floatingip": {
+      "fixed_ip_address": "192.168.1.2",
+      "floating_ip_address": "10.10.2.50",
+      "floating_network_id": "17fc9b9a-a01e-4701-8e28-117df9329355",
+      "id": "a156e0fe-6887-4e14-b936-0d8c267f7ecb",
+      "port_id": "93f3b651-213e-4eab-8604-98d3e30c377b",
+      "router_id": "932f92c5-05e8-4e57-8bce-f5e6430fc81c",
+      "status": "DOWN",
+      "tenant_id": "0260064f983044e6b847ceb5d37bf444"
+    }
+  },
+  "priority": "INFO",
+  "publisher_id": "network.dev02-control-001",
+  "timestamp": "2015-04-27 01:39:13.074983"
+}
