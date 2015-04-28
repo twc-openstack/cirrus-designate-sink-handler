@@ -1,0 +1,4 @@
+*.swp
+venv
+*.egg-info
+.tox
