@@ -31,7 +31,6 @@ def get_instance_info(auth_url, tenant_id, token, port_id):
     kc = keystone_c.Client(token=token, tenant_id=tenant_id,
                            auth_url=auth_url)
 
-    kc.service_catalog.get_endpoints()
     neutron_endpoint = kc.service_catalog.url_for(service_type='network',
                                                   endpoint_type='internalURL')
     nc = neutron_c.Client(token=token, endpoint_url=neutron_endpoint)
