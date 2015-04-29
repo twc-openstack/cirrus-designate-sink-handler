@@ -4,6 +4,7 @@ from designate.notification_handler.base import BaseAddressHandler
 from designate.openstack.common import log as logging
 import designateclient.exceptions
 import designateclient.v1 as designate_c
+from designateclient.v1.records import Record as designate_record
 from keystoneclient.v2_0 import client as keystone_c
 from neutronclient.v2_0 import client as neutron_c
 from novaclient.v2 import client as nova_c
@@ -67,9 +68,7 @@ def create_record(designate_client, domain_id, name, floating_ip):
         'type': 'A',
         'data': floating_ip,
     }
-    if isinstance(designate_client, designate_c.Client):
-        from designateclient.v1.records import Record
-        record = Record(record)
+    record = designate_record(record)
 
     designate_client.records.create(domain_id, record)
     LOG.info('Creating %s record for FIP %s' % (name, floating_ip))
