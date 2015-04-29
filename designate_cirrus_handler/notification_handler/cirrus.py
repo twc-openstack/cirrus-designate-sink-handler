@@ -61,51 +61,51 @@ def pick_tenant_domain(client, regex, metadata={}):
                 return domain
 
 
-def create_record(client, domain_id, name, fip):
+def create_record(designate_client, domain_id, name, floating_ip):
     record = {
         'name': name,
         'type': 'A',
-        'data': fip,
+        'data': floating_ip,
     }
-    if isinstance(client, designate_c.Client):
+    if isinstance(designate_client, designate_c.Client):
         from designateclient.v1.records import Record
         record = Record(record)
 
-    client.records.create(domain_id, record)
-    LOG.info('Creating %s record for FIP %s' % (name, fip))
+    designate_client.records.create(domain_id, record)
+    LOG.info('Creating %s record for FIP %s' % (name, floating_ip))
 
 
-def associate_floating_ip(client, domain_id, name, fip):
+def associate_floating_ip(designate_client, domain_id, name, floating_ip):
     try:
-        create_record(client, domain_id, name, fip)
+        create_record(designate_client, domain_id, name, floating_ip)
     except designateclient.exceptions.Conflict:
         # If there is already a client with this name, then we append the ip
         # address to the end, with the dots converted to dashes
-        octets = [int(x) for x in fip.split('.')]
+        octets = [int(x) for x in floating_ip.split('.')]
         fqdnparts = name.split('.')
         fqdnparts[0] = "%s-%d-%d-%d-%d" % tuple([fqdnparts[0]] + octets)
         new_name = '.'.join(fqdnparts)
         LOG.warn('Could not create %s, trying %s instead' % (name, new_name))
-        create_record(client, domain_id, new_name, fip)
+        create_record(designate_client, domain_id, new_name, floating_ip)
 
 
-def purge_fip_in_domain(client, domain, fip):
-    LOG.debug('Looking for A records matching %s in %s(%s)' % (fip, domain['name'], domain['id']))
+def purge_floating_ip_in_domain(designate_client, domain, floating_ip):
+    LOG.debug('Looking for A records matching %s in %s(%s)' % (floating_ip, domain['name'], domain['id']))
     delete_count = 0
-    for record in client.records.list(domain['id']):
-        if record['type'] == 'A' and record['data'] == fip:
-            LOG.info('Deleting %s A record (matches FIP %s)' % (record['name'], fip))
-            client.records.delete(domain['id'], record['id'])
+    for record in designate_client.records.list(domain['id']):
+        if record['type'] == 'A' and record['data'] == floating_ip:
+            LOG.info('Deleting %s A record (matches floating IP %s)' % (record['name'], floating_ip))
+            designate_client.records.delete(domain['id'], record['id'])
             delete_count += 1
     return delete_count
 
 
-def disassociate_floating_ip(client, fip):
-    tenant_domains = client.domains.list()
+def disassociate_floating_ip(designate_client, floating_ip):
+    tenant_domains = designate_client.domains.list()
     delete_count = 0
     for domain in tenant_domains:
-        delete_count += purge_fip_in_domain(client, domain, fip)
-    LOG.info('Deleted %d records that matched %s' % (delete_count, fip))
+        delete_count += purge_floating_ip_in_domain(designate_client, domain, floating_ip)
+    LOG.info('Deleted %d records that matched %s' % (delete_count, floating_ip))
 
 
 class CirrusFloatingHandler(BaseAddressHandler):
@@ -265,7 +265,7 @@ def test_associate_floating_ip(kc, args):
                                                     endpoint_type='internalURL')
     dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
                             endpoint=designate_endpoint)
-    associate_floating_ip(client=dc, domain_id=args.domain_id, name=args.name, fip=args.ip_address)
+    associate_floating_ip(client=dc, domain_id=args.domain_id, name=args.name, floating_ip=args.ip_address)
 
 
 def test_disassociate_floating_ip(kc, args):
@@ -273,7 +273,7 @@ def test_disassociate_floating_ip(kc, args):
                                                     endpoint_type='internalURL')
     dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
                             endpoint=designate_endpoint)
-    disassociate_floating_ip(client=dc, fip=args.ip_address)
+    disassociate_floating_ip(client=dc, floating_ip=args.ip_address)
 
 
 def main():
