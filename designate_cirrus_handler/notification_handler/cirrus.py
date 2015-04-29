@@ -29,6 +29,16 @@ cfg.CONF.register_opts([
 
 
 def get_instance_info(auth_url, tenant_id, token, port_id):
+    """Returns information about the instnace associated with the neutron `port_id` given.
+
+    Given a Neutron `port_id`, it will retrieve the device_id associated with
+    the port which should be the instance UUID.  It will then retrieve and
+    return the instance name and tenant_id for the instance.  Note that the
+    `port_id` must the one associated with the instance, not the floating IP.
+    Neutron floating ip notifications will contain the instance's port_id.
+
+    """
+
     kc = keystone_c.Client(token=token, tenant_id=tenant_id,
                            auth_url=auth_url)
 
@@ -49,8 +59,16 @@ def get_instance_info(auth_url, tenant_id, token, port_id):
     return instance_info
 
 
-def pick_tenant_domain(client, regex, metadata={}):
-    tenant_domains = client.domains.list()
+def pick_tenant_domain(designate_client, regex, metadata={}):
+    """Pick the appropriate domain to create floating ip records in
+
+    If no appropriate domains can be found, it will return `None`.  If a single
+    domain is found, it will be returned.  If multiple domains are found, then
+    it will look for one where the description matches the regex given, and
+    return the first match found.
+    """
+
+    tenant_domains = designate_client.domains.list()
     if len(tenant_domains) == 0:
         return None
     elif len(tenant_domains) == 1:
@@ -63,6 +81,12 @@ def pick_tenant_domain(client, regex, metadata={}):
 
 
 def create_record(designate_client, domain_id, name, floating_ip):
+    """Creates a new A record for a floating ip without error handling
+
+    This is intended to be called by `associate_floating_ip`, and that the
+    caller will handle any errors that occur.
+    """
+
     record = {
         'name': name,
         'type': 'A',
@@ -75,6 +99,16 @@ def create_record(designate_client, domain_id, name, floating_ip):
 
 
 def associate_floating_ip(designate_client, domain_id, name, floating_ip):
+    """Associate a new A record with a Floating IP
+
+    Try to create an A record using a FQDN provide as `name` in the domain
+    specified by the UUID provided by `domain_id` that points to the IP address
+    provided as `floating_ip`.  If the FQDN provided already exists then the IP
+    address will be appended to the hostname portion of the FQDN.  The IP
+    address will have the periods replaced with dashes, and be separated from
+    the original name with another dash.
+    """
+
     try:
         create_record(designate_client, domain_id, name, floating_ip)
     except designateclient.exceptions.Conflict:
@@ -89,6 +123,12 @@ def associate_floating_ip(designate_client, domain_id, name, floating_ip):
 
 
 def purge_floating_ip_in_domain(designate_client, domain, floating_ip):
+    """Remove all A records that match the `floating_ip` in the given `domain`
+
+    The `domain` parameter must be a dict as returned from the designate client
+    API.  This will return the number of records removed.
+    """
+
     LOG.debug('Looking for A records matching %s in %s(%s)' % (floating_ip, domain['name'], domain['id']))
     delete_count = 0
     for record in designate_client.records.list(domain['id']):
@@ -100,6 +140,13 @@ def purge_floating_ip_in_domain(designate_client, domain, floating_ip):
 
 
 def disassociate_floating_ip(designate_client, floating_ip):
+    """Remove matching A records in all domains owned by the tenant
+
+    Iterate over all domains owned by the tenant associated with
+    `designate_client` and remove any that have A records that point to
+    `floating_ip`.
+    """
+
     tenant_domains = designate_client.domains.list()
     delete_count = 0
     for domain in tenant_domains:
@@ -125,6 +172,7 @@ class CirrusFloatingHandler(BaseAddressHandler):
         ]
 
     def process_notification(self, context, event_type, payload):
+        """Process floating IP notifications from Neutron"""
         LOG.info('%s received notification - %s' %
                  (self.get_canonical_name(), event_type))
         print(payload)
