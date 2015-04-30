@@ -21,7 +21,6 @@ cfg.CONF.register_opts([
     cfg.ListOpt('notification-topics', default=['notifications']),
     cfg.StrOpt('control-exchange', default='neutron'),
     cfg.StrOpt('keystone_auth_uri', default=None),
-    cfg.StrOpt('region', default=None),
     cfg.StrOpt('default_regex', default='\(default\)$'),
 ], group='handler:cirrus_floatingip')
 
