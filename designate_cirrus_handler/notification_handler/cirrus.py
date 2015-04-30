@@ -28,7 +28,7 @@ cfg.CONF.register_opts([
 ], group='handler:cirrus_floatingip')
 
 
-def get_instance_info(auth_url, tenant_id, token, port_id):
+def get_instance_info(kc, port_id):
     """Returns information about the instnace associated with the neutron `port_id` given.
 
     Given a Neutron `port_id`, it will retrieve the device_id associated with
@@ -39,19 +39,20 @@ def get_instance_info(auth_url, tenant_id, token, port_id):
 
     """
 
-    kc = keystone_c.Client(token=token, tenant_id=tenant_id,
-                           auth_url=auth_url)
-
     neutron_endpoint = kc.service_catalog.url_for(service_type='network',
                                                   endpoint_type='internalURL')
-    nc = neutron_c.Client(token=token, endpoint_url=neutron_endpoint)
+    nc = neutron_c.Client(token=kc.auth_token,
+                          tenant_id=kc.auth_tenant_id,
+                          endpoint_url=neutron_endpoint)
     port_details = nc.show_port(port_id)
     instance_id = port_details['port']['device_id']
     instance_info = {'id': instance_id}
 
     nova_endpoint = kc.service_catalog.url_for(service_type='compute',
                                                endpoint_type='internalURL')
-    nvc = nova_c.Client(auth_token=token, bypass_url=nova_endpoint)
+    nvc = nova_c.Client(auth_token=kc.auth_token,
+                        tenant_id=kc.auth_tenant_id,
+                        bypass_url=nova_endpoint)
     server_info = nvc.servers.get(instance_id)
     instance_info['name'] = server_info.name
     instance_info['tenant_id'] = server_info.tenant_id
@@ -296,7 +297,7 @@ def parse_args():
 
 
 def test_get_instance_info(kc, args):
-    print(get_instance_info(args.authurl, kc.auth_tenant_id, kc.auth_token, args.port_id))
+    print(get_instance_info(kc, args.port_id))
 
 
 def test_pick_tenant_domain(kc, args):
