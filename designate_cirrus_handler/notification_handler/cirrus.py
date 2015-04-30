@@ -47,6 +47,7 @@ def get_instance_info(kc, port_id):
     port_details = nc.show_port(port_id)
     instance_id = port_details['port']['device_id']
     instance_info = {'id': instance_id}
+    LOG.debug('Instance id for port id %s is %s' % (port_id, instance_id))
 
     nova_endpoint = kc.service_catalog.url_for(service_type='compute',
                                                endpoint_type='internalURL')
@@ -55,7 +56,7 @@ def get_instance_info(kc, port_id):
                         bypass_url=nova_endpoint)
     server_info = nvc.servers.get(instance_id)
     instance_info['name'] = server_info.name
-    instance_info['tenant_id'] = server_info.tenant_id
+    LOG.debug('Instance name for id %s is %s' % (instance_id, server_info.name))
 
     return instance_info
 
@@ -201,6 +202,10 @@ class CirrusFloatingHandler(BaseAddressHandler):
                     LOG.info('No domains found for tenant %s(%s), ignoring Floating IP update for %s' %
                              (context['tenant_name'], context['tenant_id'], floating_ip))
                 else:
+                    LOG.debug('Using domain %s(%s) for tenant %s(%s)' %
+                              (domain['name'], domain['id'],
+                               context['tenant_name'], context['tenant_id']))
+
                     name = instance_info['name'] + '.' + domain['name']
                     associate_floating_ip(designate_client=dc,
                                           domain_id=domain['id'],
