@@ -20,8 +20,6 @@ cfg.CONF.register_group(cfg.OptGroup(
 cfg.CONF.register_opts([
     cfg.ListOpt('notification-topics', default=['notifications']),
     cfg.StrOpt('control-exchange', default='neutron'),
-    cfg.StrOpt('domain-id', default=None),
-    cfg.StrOpt('format', default=None),
     cfg.StrOpt('keystone_auth_uri', default=None),
     cfg.StrOpt('region', default=None),
     cfg.StrOpt('default_regex', default='\(default\)$'),
