@@ -112,8 +112,18 @@ def associate_floating_ip(designate_client, domain_id, name, floating_ip):
     try:
         create_record(designate_client, domain_id, name, floating_ip)
     except designateclient.exceptions.Conflict:
-        # If there is already a client with this name, then we append the ip
-        # address to the end, with the dots converted to dashes
+        # If there is already a client with this name, let's check if it's
+        # already the right IP address.  If so, then we can exit out.  This is
+        # will scale poorly, but won't be the common case and the API doesn't
+        # give us a better option.
+        for record in designate_client.records.list(domain_id):
+            if record['name'] == name and record['data'] == floating_ip:
+                if record['type'] == 'A':
+                    LOG.debug('Record %s already points at %s' % (name, floating_ip))
+                    return
+
+        # Else if the IP doesn't already match, then we append the ip address
+        # to the end, with the dots converted to dashes
         octets = [int(x) for x in floating_ip.split('.')]
         fqdnparts = name.split('.')
         fqdnparts[0] = "%s-%d-%d-%d-%d" % tuple([fqdnparts[0]] + octets)
