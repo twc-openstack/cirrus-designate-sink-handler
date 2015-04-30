@@ -304,7 +304,7 @@ def test_pick_tenant_domain(kc, args):
                                                     endpoint_type='internalURL')
     dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
                             endpoint=designate_endpoint)
-    print(pick_tenant_domain(client=dc, regex=args.domain_desc_regex))
+    print(pick_tenant_domain(designate_client=dc, regex=args.domain_desc_regex))
 
 
 def test_associate_floating_ip(kc, args):
@@ -312,7 +312,7 @@ def test_associate_floating_ip(kc, args):
                                                     endpoint_type='internalURL')
     dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
                             endpoint=designate_endpoint)
-    associate_floating_ip(client=dc, domain_id=args.domain_id, name=args.name, floating_ip=args.ip_address)
+    associate_floating_ip(desigate_client=dc, domain_id=args.domain_id, name=args.name, floating_ip=args.ip_address)
 
 
 def test_disassociate_floating_ip(kc, args):
