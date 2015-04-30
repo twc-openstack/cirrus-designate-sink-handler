@@ -176,22 +176,39 @@ class CirrusFloatingHandler(BaseAddressHandler):
         """Process floating IP notifications from Neutron"""
         LOG.info('%s received notification - %s' %
                  (self.get_canonical_name(), event_type))
-        print(payload)
+
+        kc = keystone_c.Client(token=context['auth_token'],
+                               tenant_id=context['tenant_id'],
+                               auth_url=cfg.CONF[self.name].keystone_auth_uri)
+
+        designate_endpoint = kc.service_catalog.url_for(service_type='dns',
+                                                        endpoint_type='internalURL')
+        dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
+                                endpoint=designate_endpoint)
 
         if event_type.startswith('floatingip.delete'):
-            self._delete(resource_id=payload['floatingip_id'],
-                         resource_type='floatingip')
+            floating_ip = payload['floatingip']['floating_ip_address']
+            disassociate_floating_ip(designate_client=dc,
+                                     floating_ip=floating_ip)
         elif event_type.startswith('floatingip.update'):
+            floating_ip = payload['floatingip']['floating_ip_address']
             if payload['floatingip']['fixed_ip_address']:
-                address = {
-                    'version': 4,
-                    'address': payload['floatingip']['floating_ip_address']}
-                self._create([address], payload,
-                             resource_id=payload['floatingip']['id'],
-                             resource_type='floatingip')
+                port_id = payload['floatingip']['port_id']
+                instance_info = get_instance_info(kc, port_id)
+                domain = pick_tenant_domain(designate_client=dc,
+                                            regex=cfg.CONF[self.name].default_regex)
+                if domain is None:
+                    LOG.info('No domains found for tenant %s(%s), ignoring Floating IP update for %s' %
+                             (context['tenant_name'], context['tenant_id'], floating_ip))
+                else:
+                    name = instance_info['name'] + '.' + domain['name']
+                    associate_floating_ip(designate_client=dc,
+                                          domain_id=domain['id'],
+                                          name=name,
+                                          floating_ip=floating_ip)
             elif not payload['floatingip']['fixed_ip_address']:
-                self._delete(resource_id=payload['floatingip']['id'],
-                             resource_type='floatingip')
+                disassociate_floating_ip(designate_client=dc,
+                                         floating_ip=floating_ip)
 
 
 def env(*vars, **kwargs):
