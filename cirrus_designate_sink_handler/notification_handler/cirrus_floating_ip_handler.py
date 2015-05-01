@@ -29,6 +29,10 @@ cfg.CONF.register_opts([
 ], group='handler:cirrus_floating_ip')
 
 
+class CirrusRecordExists(Exception):
+    pass
+
+
 class CirrusFloatingIPHandler(BaseAddressHandler):
     """Handler for Neutron notifications."""
     __plugin_name__ = 'cirrus_floating_ip'
@@ -127,6 +131,12 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
             recordset = self._find_or_create_recordset(
                 context, **recordset_values)
 
+            # If there is any existing A records for this name, then we don't
+            # want to create additional ones, we throw an exception so the
+            # caller can retry if appropriate.
+            if len(recordset.records) > 0:
+                raise CirrusRecordExists('Name already has an A record')
+
             record_values = {
                 'data': addr['address'],
                 'managed': True,
@@ -172,8 +182,8 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
                          managed_extra='portid:%s' % (port_id),
                          resource_type='a:floatingip',
                          resource_id=floating_ip_id)
-        except designate.exceptions.DuplicateRecord:
-            LOG.warn('Could not create %s using default format, '
+        except (designate.exceptions.DuplicateRecord, CirrusRecordExists):
+            LOG.warn('Could not create record for %s using default format, '
                      'trying fallback format' % (extra['instance_name']))
             self._create(context=context,
                          addresses=addresses,
