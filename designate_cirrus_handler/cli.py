@@ -1,8 +1,13 @@
 import designate_cirrus_handler.notification_handler.cirrus as cirrus
 from designate.openstack.common import log as logging
-import designateclient.v1 as designate_c
+from designate.utils import find_config
+from designate.context import DesignateContext
+from designate import rpc
+from designate import policy
 from keystoneclient.v2_0 import client as keystone_c
+from oslo.config import cfg
 
+PROG = 'designate-cirrus-sink'
 LOG = logging.getLogger(__name__)
 
 
@@ -31,6 +36,11 @@ def parse_args():
                                        description='valid subcommands',
                                        help='additional help')
 
+    parser.add_argument("-c", "--config-file",
+                        dest='config_file',
+                        default='/etc/designate/designate.conf',
+                        help='Config file to load'
+                             'Defaults to /etc/designate/designate.conf')
     parser.add_argument("--endpoint-type",
                         metavar='<endpoint-type>',
                         dest='endpoint_type',
@@ -92,55 +102,65 @@ def parse_args():
                                        help='Given a IP address and domain ID, create a new record in the default domain')
     afi_parser.add_argument('--domain-id', required=True,
                             help='UUID of designate-domain to create record in')
+    afi_parser.add_argument('--domain-name', required=True,
+                            help='Name of designate-domain to create record in')
     afi_parser.add_argument('--name', required=True,
                             help='Name of new record to create')
     afi_parser.add_argument('--ip-address', required=True,
                             help='IP Address to associate with record')
+    afi_parser.add_argument('--ip-uuid', required=True,
+                            help='Floating IP UUID to associate with record')
     afi_parser.set_defaults(func=test_associate_floating_ip)
 
     dfi_parser = subparsers.add_parser('disassociate-floating-ip',
-                                       help='Given a IP address, remove any A '
+                                       help='Given a UUID and IP address, remove any A '
                                             'records in any tenant domains that match')
+    dfi_parser.add_argument('--ip-id', required=True,
+                            help='Floating IP UUID to disassociate with records found')
     dfi_parser.add_argument('--ip-address', required=True,
-                            help='IP Address to disassociate with records found')
+                            help='Floating IP Address to disassociate with records found')
     dfi_parser.set_defaults(func=test_disassociate_floating_ip)
 
     return parser.parse_args()
 
 
-def test_get_instance_info(kc, args):
-    print(cirrus.get_instance_info(kc, args.port_id))
+def test_get_instance_info(kc, handler, context, args):
+    print(handler._get_instance_info(kc, args.port_id))
 
 
-def test_pick_tenant_domain(kc, args):
-    designate_endpoint = kc.service_catalog.url_for(service_type='dns',
-                                                    endpoint_type='internalURL')
-    dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
-                            endpoint=designate_endpoint)
-    print(cirrus.pick_tenant_domain(designate_client=dc, regex=args.domain_desc_regex))
+def test_pick_tenant_domain(kc, handler, context, args):
+    print(handler._pick_tenant_domain(context=context,
+                                      regex=args.domain_desc_regex
+                                      ).items())
 
 
-def test_associate_floating_ip(kc, args):
-    designate_endpoint = kc.service_catalog.url_for(service_type='dns',
-                                                    endpoint_type='internalURL')
-    dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
-                            endpoint=designate_endpoint)
-    cirrus.associate_floating_ip(desigate_client=dc, domain_id=args.domain_id,
-                                 name=args.name, floating_ip=args.ip_address)
+def test_associate_floating_ip(kc, handler, context, args):
+    extra = {
+        'instance_name': args.name,
+        'domain': args.domain_name,
+    }
+    handler._associate_floating_ip(context, domain_id=args.domain_id,
+                                   extra=extra,
+                                   floating_ip_id=args.ip_uuid,
+                                   floating_ip=args.ip_address)
 
 
-def test_disassociate_floating_ip(kc, args):
-    designate_endpoint = kc.service_catalog.url_for(service_type='dns',
-                                                    endpoint_type='internalURL')
-    dc = designate_c.Client(token=kc.auth_token, tenant_id=kc.auth_tenant_id,
-                            endpoint=designate_endpoint)
-    cirrus.disassociate_floating_ip(client=dc, floating_ip=args.ip_address)
+def test_disassociate_floating_ip(kc, handler, context, args):
+    handler._disassociate_floating_ip(floating_ip_id=args.ip_id,
+                                      floating_ip=args.ip_address)
+
+
+def load_config(filename):
+    config_files = find_config('%s.conf' % 'designate')
+    cfg.CONF(args=[], project='designate', prog=PROG,
+             default_config_files=config_files)
 
 
 def main():
     args = parse_args()
     logging.setup('cirrus_floatingip')
     LOG.logger.setLevel('DEBUG')
+    load_config(args.config_file)
 
     kc = keystone_c.Client(
         username=args.username,
@@ -150,7 +170,13 @@ def main():
         endpoint_type=args.endpoint_type,
         region_name=args.regionname)
 
-    args.func(kc, args)
+    policy.init()
+    rpc.init(cfg.CONF)
+    context = DesignateContext.get_admin_context(tenant=kc.auth_tenant_id)
+
+    handler = cirrus.CirrusFloatingHandler()
+
+    args.func(kc, handler, context, args)
 
 if __name__ == "__main__":
     main()
