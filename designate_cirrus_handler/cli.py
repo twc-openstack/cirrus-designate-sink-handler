@@ -110,6 +110,8 @@ def parse_args():
                             help='IP Address to associate with record')
     afi_parser.add_argument('--ip-uuid', required=True,
                             help='Floating IP UUID to associate with record')
+    afi_parser.add_argument('--port-id', required=True,
+                            help='Neutron port ID to associate with record')
     afi_parser.set_defaults(func=test_associate_floating_ip)
 
     dfi_parser = subparsers.add_parser('disassociate-floating-ip',
@@ -142,7 +144,8 @@ def test_associate_floating_ip(kc, handler, context, args):
     handler._associate_floating_ip(context, domain_id=args.domain_id,
                                    extra=extra,
                                    floating_ip_id=args.ip_uuid,
-                                   floating_ip=args.ip_address)
+                                   floating_ip=args.ip_address,
+                                   port_id=args.port_id)
 
 
 def test_disassociate_floating_ip(kc, handler, context, args):
