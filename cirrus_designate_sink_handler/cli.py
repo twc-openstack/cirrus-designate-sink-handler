@@ -1,4 +1,4 @@
-import designate_cirrus_handler.notification_handler.cirrus as cirrus
+import cirrus_designate_sink_handler.notification_handler.cirrus_floating_ip_handler as cirrus
 from designate.openstack.common import log as logging
 from designate.utils import find_config
 from designate.context import DesignateContext
@@ -177,7 +177,7 @@ def main():
     rpc.init(cfg.CONF)
     context = DesignateContext.get_admin_context(tenant=kc.auth_tenant_id)
 
-    handler = cirrus.CirrusFloatingHandler()
+    handler = cirrus.CirrusFloatingIPHandler()
 
     args.func(kc, handler, context, args)
 
