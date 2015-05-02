@@ -26,12 +26,12 @@ cfg.CONF.register_opts([
     cfg.StrOpt('format', default='%(instance_name)s.%(domain)s'),
     cfg.StrOpt('format_fallback',
                default='%(instance_name)s-%(octet0)s-%(octet1)s-%(octet2)s-%(octet3)s.%(domain)s'),
-], group='handler:cirrus_floatingip')
+], group='handler:cirrus_floating_ip')
 
 
-class CirrusFloatingHandler(BaseAddressHandler):
+class CirrusFloatingIPHandler(BaseAddressHandler):
     """Handler for Neutron notifications."""
-    __plugin_name__ = 'cirrus_floatingip'
+    __plugin_name__ = 'cirrus_floating_ip'
     __plugin_type__ = 'handler'
 
     def get_exchange_topics(self):
