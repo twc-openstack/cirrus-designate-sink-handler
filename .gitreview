@@ -1,5 +1,5 @@
 [gerrit]
 host=bfd-gerrit.os.cloud.twc.net
 port=29418
-project=designate-cirrus-handler.git
+project=cirrus-designate-sink-handler.git
 defaultbranch=master
