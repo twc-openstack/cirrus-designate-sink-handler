@@ -1,8 +1,6 @@
 pbr>=0.6,<1.0
 # git repos must be editable so that egg_info can work
 -e git+https://github.com/openstack/designate.git@stable/juno#egg=designate
-python-designateclient
 python-novaclient
 python-neutronclient
 python-keystoneclient
-ipython
