@@ -320,7 +320,9 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
                 instance_info = self._get_instance_info(kc, port_id)
 
                 domain = self._pick_tenant_domain(orig_context,
-                                                  regex=cfg.CONF[self.name].default_regex)
+                                                  default_regex=cfg.CONF[self.name].default_regex,
+                                                  require_default_regex=cfg.CONF[self.name].require_default_regex,
+                                                  )
                 if domain is None:
                     LOG.info('No domains found for tenant %s(%s), ignoring Floating IP update for %s' %
                              (context['tenant_name'], context['tenant_id'], floating_ip))
