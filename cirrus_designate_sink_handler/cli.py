@@ -108,11 +108,19 @@ def parse_args():
                                             'domain name to put FIP records in')
     ptd_parser.add_argument('--tenant-id', required=True,
                             help='ID of tenant to look up in Designate')
-    ptd_parser.add_argument('--domain-desc-regex', default='\(default\)$',
-                            metavar='REGEX',
+    ptd_parser.add_argument('--default-regex', default='\(default\)$',
+                            metavar='DEFAULT-REGEX',
                             help='Regex to match against designate domain description when '
                                  'picking among multiples.  Defaults to \'\(default\)$\'')
-    ptd_parser.set_defaults(func=test_pick_tenant_domain)
+    ptd_parser.add_argument('--require-default-regex', dest='require_default_regex',
+                            action='store_true',
+                            help='If set, require a domain match default regex to be picked (default: false)'
+                            )
+    ptd_parser.add_argument('--no-require-default-regex', dest='require_default_regex',
+                            action='store_false',
+                            help='If set, don\'t require a domain match default regex to be picked (default: true)'
+                            )
+    ptd_parser.set_defaults(func=test_pick_tenant_domain, require_default_regex=False)
 
     afi_parser = subparsers.add_parser('associate-floating-ip',
                                        help='Given a IP address and domain ID, create a new record in the default domain')
@@ -147,9 +155,14 @@ def test_get_instance_info(kc, handler, context, args):
 
 
 def test_pick_tenant_domain(kc, handler, context, args):
-    print(handler._pick_tenant_domain(context=context,
-                                      regex=args.domain_desc_regex
-                                      ).items())
+    domain = handler._pick_tenant_domain(context=context,
+                                         default_regex=args.default_regex,
+                                         require_default_regex=args.require_default_regex,
+                                         )
+    if domain is None:
+        print("No matching domain found!")
+    else:
+        print(domain.items())
 
 
 def test_associate_floating_ip(kc, handler, context, args):

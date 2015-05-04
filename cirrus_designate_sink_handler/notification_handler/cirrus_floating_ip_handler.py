@@ -41,6 +41,7 @@ cfg.CONF.register_opts([
     cfg.StrOpt('control-exchange', default='neutron'),
     cfg.StrOpt('keystone_auth_uri', default=None),
     cfg.StrOpt('default_regex', default='\(default\)$'),
+    cfg.StrOpt('require_default_regex', default=False),
     cfg.StrOpt('format', default='%(instance_name)s.%(domain)s'),
     cfg.StrOpt('format_fallback',
                default='%(instance_name)s-%(octet0)s-%(octet1)s-%(octet2)s-%(octet3)s.%(domain)s'),
@@ -102,7 +103,7 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
 
         return instance_info
 
-    def _pick_tenant_domain(self, context, regex, metadata={}):
+    def _pick_tenant_domain(self, context, default_regex, require_default_regex, metadata={}):
         """Pick the appropriate domain to create floating ip records in
 
         If no appropriate domains can be found, it will return `None`.  If a single
@@ -112,15 +113,15 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
         """
 
         tenant_domains = self.central_api.find_domains(context)
-        if len(tenant_domains) == 0:
-            return None
-        elif len(tenant_domains) == 1:
+        if len(tenant_domains) == 1 and not require_default_regex:
             return tenant_domains[0]
 
         for domain in tenant_domains:
             if domain.description is not None:
-                if re.search(regex, domain.description):
+                if re.search(default_regex, domain.description):
                     return domain
+
+        return None
 
     def _create(self, context, addresses, name_format, extra, domain_id,
                 managed_extra, resource_type, resource_id):

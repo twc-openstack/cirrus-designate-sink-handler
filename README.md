@@ -123,6 +123,16 @@ anywhere in the description field.  If no matches are found, then the handler
 will not create a record.  If there is a single domain for the project (or
 tenant) then it will always be picked regardless of its description.
 
+## require_default_regex
+
+**Default**: False
+
+If this is set to False (the default) then when only a single domain is defined
+in a tenant, it will be used by the handler even if it doesn't match the
+`default_regex`.  If this option is set to True, then all domains must match
+the `default_regex` or they will not be picked.  This can be used to gradually
+roll out the handler's functionality to specific domains.
+
 ## format
 
 **Default**: `%(instance_name)s.%(domain)s`
