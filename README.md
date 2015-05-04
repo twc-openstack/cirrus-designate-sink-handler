@@ -27,7 +27,7 @@ configured topic for Neutron topics.  Specifically, it listens to the following
 events:
 
  * floatingip.update.end
- * floatingip.delete.start
+ * floatingip.delete.end
  * port.delete.end
 
 Neutron generates events for the beginning and end of all CRUD events for the

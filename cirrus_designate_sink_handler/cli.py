@@ -143,8 +143,6 @@ def parse_args():
                                             'records in any tenant domains that match')
     dfi_parser.add_argument('--ip-id', required=True,
                             help='Floating IP UUID to disassociate with records found')
-    dfi_parser.add_argument('--ip-address', required=True,
-                            help='Floating IP Address to disassociate with records found')
     dfi_parser.set_defaults(func=test_disassociate_floating_ip)
 
     return parser.parse_args()
@@ -178,8 +176,7 @@ def test_associate_floating_ip(kc, handler, context, args):
 
 
 def test_disassociate_floating_ip(kc, handler, context, args):
-    handler._disassociate_floating_ip(floating_ip_id=args.ip_id,
-                                      floating_ip=args.ip_address)
+    handler._disassociate_floating_ip(floating_ip_id=args.ip_id)
 
 
 def load_config(filename):

@@ -67,7 +67,7 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
     def get_event_types(self):
         return [
             'floatingip.update.end',
-            'floatingip.delete.start',
+            'floatingip.delete.end',
             'port.delete.end',
         ]
 
@@ -213,7 +213,7 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
                          resource_type='a:floatingip',
                          resource_id=floating_ip_id)
 
-    def _disassociate_floating_ip(self, context, floating_ip_id, floating_ip):
+    def _disassociate_floating_ip(self, context, floating_ip_id):
         """Remove A records associated with a given floating IP UUID
 
         Searches for managed A records associated with the given floating IP UUID.
@@ -227,17 +227,17 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
             'managed_plugin_type': self.get_plugin_type(),
         }
         records = self.central_api.find_records(context, criterion=criterion)
-        LOG.debug('Found %d records to delete that matched floating ip %s(%s)' %
-                  (len(records), floating_ip, floating_ip_id))
+        LOG.debug('Found %d records to delete that matched floating ip %s' %
+                  (len(records), floating_ip_id))
         for record in records:
-            LOG.debug('Deleting record %s' % (record['id']))
+            LOG.debug('Deleting record %s with IP %s' % (record['id'], record['data']))
             self.central_api.delete_record(context,
                                            record['domain_id'],
                                            record['recordset_id'],
                                            record['id'])
 
-        LOG.info('Deleted %d records that matched floating ip %s(%s)' %
-                 (len(records), floating_ip, floating_ip_id))
+        LOG.info('Deleted %d records that matched floating ip %s' %
+                 (len(records), floating_ip_id))
 
         return len(records)
 
@@ -302,11 +302,11 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
             # time, so the first thing we always do is remove any existing
             # association when we get an update.  This is always safe whether
             # or not we're deleting it or reassigning it.
-            floating_ip = payload['floatingip']['floating_ip_address']
+            floating_ip = payload['floatingip'].get('floating_ip_address', None)
             floating_ip_id = payload['floatingip']['id']
             self._disassociate_floating_ip(context=elevated_context,
                                            floating_ip_id=floating_ip_id,
-                                           floating_ip=floating_ip)
+                                           )
 
         # If it turns out that the event is an update and it has a fixed ip in
         # the update, then we create the new record.
