@@ -135,13 +135,16 @@ roll out the handler's functionality to specific domains.
 
 ## format
 
-**Default**: `%(instance_name)s.%(domain)s`
+**Default**: `%(instance_short_name)s.%(domain)s`
 
 When creating new records, this value will be used as a Python format string to
 determine the name to use.  The following variables are available for
 substitution:
 
  * instance_name - name of the instance being associated with the floating IP
+
+ * instance_short_name - name of the instance up to the first dot in the name.
+   This can be used if FQDNs are used as instance names.
 
  * domain - domain the record will be created in
 
@@ -151,7 +154,7 @@ substitution:
 
 ## format_fallback
 
-**Default**: `%(instance_name)s-%(octet0)s-%(octet1)s-%(octet2)s-%(octet3)s.%(domain)s`
+**Default**: `%(instance_short_name)s-%(octet0)s-%(octet1)s-%(octet2)s-%(octet3)s.%(domain)s`
 
 When creating the record, if the handler detects there is already an A record
 that exists with the name that was generated using the `format` pattern, then

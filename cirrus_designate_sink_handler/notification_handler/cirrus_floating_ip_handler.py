@@ -42,9 +42,9 @@ cfg.CONF.register_opts([
     cfg.StrOpt('keystone_auth_uri', default=None),
     cfg.StrOpt('default_regex', default='\(default\)$'),
     cfg.StrOpt('require_default_regex', default=False),
-    cfg.StrOpt('format', default='%(instance_name)s.%(domain)s'),
+    cfg.StrOpt('format', default='%(instance_short_name)s.%(domain)s'),
     cfg.StrOpt('format_fallback',
-               default='%(instance_name)s-%(octet0)s-%(octet1)s-%(octet2)s-%(octet3)s.%(domain)s'),
+               default='%(instance_short_name)s-%(octet0)s-%(octet1)s-%(octet2)s-%(octet3)s.%(domain)s'),
 ], group='handler:cirrus_floating_ip')
 
 
@@ -344,6 +344,7 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
 
                     extra = payload.copy()
                     extra.update({'instance_name': instance_info['name'],
+                                  'instance_short_name': instance_info['name'].partition('.')[0],
                                   'domain': domain.name})
                     self._associate_floating_ip(context=elevated_context,
                                                 domain_id=domain.id,
