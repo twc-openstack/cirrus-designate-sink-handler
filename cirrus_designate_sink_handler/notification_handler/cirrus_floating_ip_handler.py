@@ -312,13 +312,6 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
         # the update, then we create the new record.
         if event_type.startswith('floatingip.update'):
             if payload['floatingip']['fixed_ip_address']:
-                kc = keystone_c.Client(token=context['auth_token'],
-                                       tenant_id=context['tenant_id'],
-                                       auth_url=cfg.CONF[self.name].keystone_auth_uri)
-
-                port_id = payload['floatingip']['port_id']
-                instance_info = self._get_instance_info(kc, port_id)
-
                 domain = self._pick_tenant_domain(orig_context,
                                                   default_regex=cfg.CONF[self.name].default_regex,
                                                   require_default_regex=cfg.CONF[self.name].require_default_regex,
@@ -330,6 +323,13 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
                     LOG.debug('Using domain %s(%s) for tenant %s(%s)' %
                               (domain.name, domain.id,
                                context['tenant_name'], context['tenant_id']))
+
+                    kc = keystone_c.Client(token=context['auth_token'],
+                                           tenant_id=context['tenant_id'],
+                                           auth_url=cfg.CONF[self.name].keystone_auth_uri)
+
+                    port_id = payload['floatingip']['port_id']
+                    instance_info = self._get_instance_info(kc, port_id)
 
                     extra = payload.copy()
                     extra.update({'instance_name': instance_info['name'],
