@@ -137,6 +137,7 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
         data = extra.copy()
         LOG.debug('Event data: %s' % data)
 
+        names = []
         for addr in addresses:
             event_data = data.copy()
             event_data.update(designate.notification_handler.base.get_ip_data(addr))
@@ -172,6 +173,8 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
                                            domain_id,
                                            recordset['id'],
                                            Record(**record_values))
+            names.append(recordset_values['name'])
+        return names
 
     def _associate_floating_ip(self, context, domain_id, extra, floating_ip_id, floating_ip, port_id):
         """Associate a new A record with a Floating IP
@@ -193,25 +196,26 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
             'address': floating_ip,
         }]
         try:
-            self._create(context=context,
-                         addresses=addresses,
-                         name_format=cfg.CONF[self.name].format,
-                         extra=extra,
-                         domain_id=domain_id,
-                         managed_extra='portid:%s' % (port_id),
-                         resource_type='a:floatingip',
-                         resource_id=floating_ip_id)
+            names = self._create(context=context,
+                                 addresses=addresses,
+                                 name_format=cfg.CONF[self.name].format,
+                                 extra=extra,
+                                 domain_id=domain_id,
+                                 managed_extra='portid:%s' % (port_id),
+                                 resource_type='a:floatingip',
+                                 resource_id=floating_ip_id)
         except (designate.exceptions.DuplicateRecord, CirrusRecordExists):
             LOG.warn('Could not create record for %s using default format, '
                      'trying fallback format' % (extra['instance_name']))
-            self._create(context=context,
-                         addresses=addresses,
-                         name_format=cfg.CONF[self.name].format_fallback,
-                         extra=extra,
-                         domain_id=domain_id,
-                         managed_extra='portid:%s' % (port_id),
-                         resource_type='a:floatingip',
-                         resource_id=floating_ip_id)
+            names = self._create(context=context,
+                                 addresses=addresses,
+                                 name_format=cfg.CONF[self.name].format_fallback,
+                                 extra=extra,
+                                 domain_id=domain_id,
+                                 managed_extra='portid:%s' % (port_id),
+                                 resource_type='a:floatingip',
+                                 resource_id=floating_ip_id)
+        LOG.info("Created %s to point at %s" % (','.join(names), floating_ip))
 
     def _disassociate_floating_ip(self, context, floating_ip_id):
         """Remove A records associated with a given floating IP UUID
