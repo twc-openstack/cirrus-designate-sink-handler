@@ -306,8 +306,15 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
             # time, so the first thing we always do is remove any existing
             # association when we get an update.  This is always safe whether
             # or not we're deleting it or reassigning it.
-            floating_ip = payload['floatingip'].get('floating_ip_address', None)
-            floating_ip_id = payload['floatingip']['id']
+            if 'floatingip' in payload:
+                # floatingip.update.end
+                floating_ip = payload['floatingip']['floating_ip_address']
+                floating_ip_id = payload['floatingip']['id']
+            elif 'floatingip_id' in payload:
+                # floatingip.delete.end
+                floating_ip = None
+                floating_ip_id = payload['floatingip_id']
+
             self._disassociate_floating_ip(context=elevated_context,
                                            floating_ip_id=floating_ip_id,
                                            )
