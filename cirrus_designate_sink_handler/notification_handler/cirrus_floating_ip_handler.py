@@ -41,7 +41,7 @@ cfg.CONF.register_opts([
     cfg.StrOpt('control-exchange', default='neutron'),
     cfg.StrOpt('keystone_auth_uri', default=None),
     cfg.StrOpt('default_regex', default='\(default\)$'),
-    cfg.StrOpt('require_default_regex', default=False),
+    cfg.BoolOpt('require_default_regex', default=False),
     cfg.StrOpt('format', default='%(instance_short_name)s.%(domain)s'),
     cfg.StrOpt('format_fallback',
                default='%(instance_short_name)s-%(octet0)s-%(octet1)s-%(octet2)s-%(octet3)s.%(domain)s'),
