@@ -39,6 +39,7 @@ cfg.CONF.register_group(cfg.OptGroup(
 cfg.CONF.register_opts([
     cfg.ListOpt('notification-topics', default=['notifications']),
     cfg.StrOpt('control-exchange', default='neutron'),
+    cfg.StrOpt('region_name', default=None),
     cfg.StrOpt('keystone_auth_uri', default=None),
     cfg.StrOpt('default_regex', default='\(default\)$'),
     cfg.BoolOpt('require_default_regex', default=False),
@@ -337,6 +338,7 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
 
                     kc = keystone_c.Client(token=context['auth_token'],
                                            tenant_id=context['tenant_id'],
+                                           region_name=cfg.CONF[self.name].region_name,
                                            auth_url=cfg.CONF[self.name].keystone_auth_uri)
 
                     port_id = payload['floatingip']['port_id']

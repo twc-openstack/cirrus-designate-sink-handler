@@ -102,6 +102,12 @@ be consumed once.  This must match what is configured in Neutron.
 This is the exchange that Neutron is configured with.  This must match what is
 configured in Neutron.
 
+## region_name
+**Default**: None
+
+If specified, then all neutron and nova API calls will be limited to the region
+given.  This is recommended in a multi-region environment.
+
 ## keystone_auth_uri
 
 **Required**
