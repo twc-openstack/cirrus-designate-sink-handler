@@ -10,7 +10,7 @@
 #
 #      http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
+# Unless required by applicable law or ageeed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
@@ -72,6 +72,23 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
             'port.delete.end',
         ]
 
+    # RFC 952/1123 allow only A-Z, a-z, 0-9, and -
+    # We'll swap all other special characters with '-',
+    # this may lead to a collision but at least has a possibility
+    # to work.
+    # Additionally each section of a domain name may only be
+    # 63 characters long, so we'll truncate that too.
+    def _scrub_instance_name(name=""):
+        scrubbed = ""
+        for char in name:
+            if char.isalnum() or char == '.' or char == '-':
+                scrubbed += char
+            else:
+                scrubbed += '-'
+            if len(scrubbed) == 63:
+                return scrubbed
+        return scrubbed
+
     def _get_instance_info(self, kc, port_id):
         """Returns information about the instance associated with the neutron `port_id` given.
 
@@ -99,8 +116,16 @@ class CirrusFloatingIPHandler(BaseAddressHandler):
                             tenant_id=kc.auth_tenant_id,
                             bypass_url=nova_endpoint)
         server_info = nvc.servers.get(instance_id)
-        instance_info['name'] = server_info.name
         LOG.debug('Instance name for id %s is %s' % (instance_id, server_info.name))
+        instance_info['original_name'] = server_info.name
+        instance_info['scrubbed_name'] = _scrub_instance_name(server_info.name)
+        if instance_info['original_name'] != instance_info['scrubbed_name']:
+            LOG.warn('Instance name for id %s contains characters that cannot be used'
+                    ' for a valid DNS record. It was scrubbed from %s to %s'
+                    % (instance_id, instance_info['original_name'], instance_info['scrubbed_name']))
+            instance_info['name'] = instance_info['scrubbed_name']
+        else:
+            instance_info['name'] = instance_info['original_name']
 
         return instance_info
 
